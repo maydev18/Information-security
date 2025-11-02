@@ -1,283 +1,262 @@
 #include "DES.hpp"
 #include <iostream>
-const std::array<std::array <byte , 16> , 16> DES :: sbox = {
+const uint32_t DES :: initialPermutation[64] ={
+    58, 50, 42, 34, 26, 18, 10, 2,
+    60, 52, 44, 36, 28, 20, 12, 4,
+    62, 54, 46, 38, 30, 22, 14, 6,
+    64, 56, 48, 40, 32, 24, 16, 8,
+    57, 49, 41, 33, 25, 17,  9, 1,
+    59, 51, 43, 35, 27, 19, 11, 3,
+    61, 53, 45, 37, 29, 21, 13, 5,
+    63, 55, 47, 39, 31, 23, 15, 7
+};
+const uint32_t DES::finalPermutation[64] = {
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41,  9, 49, 17, 57, 25
+};
+const uint32_t DES::PC1[56] = {
+    57, 49, 41, 33, 25, 17, 9,
+    1, 58, 50, 42, 34, 26, 18,
+    10,  2, 59, 51, 43, 35, 27,
+    19, 11,  3, 60, 52, 44, 36,
+    63, 55, 47, 39, 31, 23, 15,
+    7, 62, 54, 46, 38, 30, 22,
+    14,  6, 61, 53, 45, 37, 29,
+    21, 13,  5, 28, 20, 12,  4
+};
+const uint32_t DES::PC2[48] = {
+    14, 17, 11, 24,  1,  5,
+    3, 28, 15,  6, 21, 10,
+    23, 19, 12,  4, 26,  8,
+    16,  7, 27, 20, 13,  2,
+    41, 52, 31, 37, 47, 55,
+    30, 40, 51, 45, 33, 48,
+    44, 49, 39, 56, 34, 53,
+    46, 42, 50, 36, 29, 32
+};
+const uint32_t DES ::  E[48] = {
+    32, 1,  2,  3,  4,  5,
+    4,  5,  6,  7,  8,  9,
+    8,  9, 10, 11, 12, 13,
+    12, 13, 14, 15, 16, 17,
+    16, 17, 18, 19, 20, 21,
+    20, 21, 22, 23, 24, 25,
+    24, 25, 26, 27, 28, 29,
+    28, 29, 30, 31, 32,  1
+};
+const uint32_t DES :: S_BOX[8][4][16] = {
+    // S1
     {
-        {0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76},
-        {0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0},
-        {0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15},
-        {0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75},
-        {0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84},
-        {0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf},
-        {0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8},
-        {0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2},
-        {0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73},
-        {0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb},
-        {0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79},
-        {0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08},
-        {0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a},
-        {0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e},
-        {0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf},
-        {0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16}
+        {14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7},
+        {0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8},
+        {4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0},
+        {15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13}
+    },
+
+    // S2
+    {
+        {15,1,8,14,6,11,3,4,9,7,2,13,12,0,5,10},
+        {3,13,4,7,15,2,8,14,12,0,1,10,6,9,11,5},
+        {0,14,7,11,10,4,13,1,5,8,12,6,9,3,2,15},
+        {13,8,10,1,3,15,4,2,11,6,7,12,0,5,14,9}
+    },
+
+    // S3
+    {
+        {10,0,9,14,6,3,15,5,1,13,12,7,11,4,2,8},
+        {13,7,0,9,3,4,6,10,2,8,5,14,12,11,15,1},
+        {13,6,4,9,8,15,3,0,11,1,2,12,5,10,14,7},
+        {1,10,13,0,6,9,8,7,4,15,14,3,11,5,2,12}
+    },
+
+    // S4
+    {
+        {7,13,14,3,0,6,9,10,1,2,8,5,11,12,4,15},
+        {13,8,11,5,6,15,0,3,4,7,2,12,1,10,14,9},
+        {10,6,9,0,12,11,7,13,15,1,3,14,5,2,8,4},
+        {3,15,0,6,10,1,13,8,9,4,5,11,12,7,2,14}
+    },
+
+    // S5
+    {
+        {2,12,4,1,7,10,11,6,8,5,3,15,13,0,14,9},
+        {14,11,2,12,4,7,13,1,5,0,15,10,3,9,8,6},
+        {4,2,1,11,10,13,7,8,15,9,12,5,6,3,0,14},
+        {11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3}
+    },
+
+    // S6
+    {
+        {12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11},
+        {10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8},
+        {9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6},
+        {4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13}
+    },
+
+    // S7
+    {
+        {4,11,2,14,15,0,8,13,3,12,9,7,5,10,6,1},
+        {13,0,11,7,4,9,1,10,14,3,5,12,2,15,8,6},
+        {1,4,11,13,12,3,7,14,10,15,6,8,0,5,9,2},
+        {6,11,13,8,1,4,10,7,9,5,0,15,14,2,3,12}
+    },
+
+    // S8
+    {
+        {13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7},
+        {1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2},
+        {7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8},
+        {2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11}
     }
 };
-
-const std::array<std::array <byte , 16> , 16> DES :: inv_sbox = {
-    {
-        {0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB},
-        {0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB},
-        {0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D, 0xEE, 0x4C, 0x95, 0x0B, 0x42, 0xFA, 0xC3, 0x4E},
-        {0x08, 0x2E, 0xA1, 0x66, 0x28, 0xD9, 0x24, 0xB2, 0x76, 0x5B, 0xA2, 0x49, 0x6D, 0x8B, 0xD1, 0x25},
-        {0x72, 0xF8, 0xF6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xD4, 0xA4, 0x5C, 0xCC, 0x5D, 0x65, 0xB6, 0x92},
-        {0x6C, 0x70, 0x48, 0x50, 0xFD, 0xED, 0xB9, 0xDA, 0x5E, 0x15, 0x46, 0x57, 0xA7, 0x8D, 0x9D, 0x84},
-        {0x90, 0xD8, 0xAB, 0x00, 0x8C, 0xBC, 0xD3, 0x0A, 0xF7, 0xE4, 0x58, 0x05, 0xB8, 0xB3, 0x45, 0x06},
-        {0xD0, 0x2C, 0x1E, 0x8F, 0xCA, 0x3F, 0x0F, 0x02, 0xC1, 0xAF, 0xBD, 0x03, 0x01, 0x13, 0x8A, 0x6B},
-        {0x3A, 0x91, 0x11, 0x41, 0x4F, 0x67, 0xDC, 0xEA, 0x97, 0xF2, 0xCF, 0xCE, 0xF0, 0xB4, 0xE6, 0x73},
-        {0x96, 0xAC, 0x74, 0x22, 0xE7, 0xAD, 0x35, 0x85, 0xE2, 0xF9, 0x37, 0xE8, 0x1C, 0x75, 0xDF, 0x6E},
-        {0x47, 0xF1, 0x1A, 0x71, 0x1D, 0x29, 0xC5, 0x89, 0x6F, 0xB7, 0x62, 0x0E, 0xAA, 0x18, 0xBE, 0x1B},
-        {0xFC, 0x56, 0x3E, 0x4B, 0xC6, 0xD2, 0x79, 0x20, 0x9A, 0xDB, 0xC0, 0xFE, 0x78, 0xCD, 0x5A, 0xF4},
-        {0x1F, 0xDD, 0xA8, 0x33, 0x88, 0x07, 0xC7, 0x31, 0xB1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xEC, 0x5F},
-        {0x60, 0x51, 0x7F, 0xA9, 0x19, 0xB5, 0x4A, 0x0D, 0x2D, 0xE5, 0x7A, 0x9F, 0x93, 0xC9, 0x9C, 0xEF},
-        {0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61},
-        {0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D}
-    }
+const uint32_t DES :: StraightPbox[32] = {
+    16,  7, 20, 21,
+    29, 12, 28, 17,
+    1, 15, 23, 26,
+    5, 18, 31, 10,
+    2,  8, 24, 14,
+    32, 27,  3,  9,
+    19, 13, 30,  6,
+    22, 11,  4, 25
 };
 
-const std::array<byte , 11> DES :: rcon = {
-    {0x00 , 0x01, 0x02, 0x04 , 0x08, 0x10 , 0x20 , 0x40 , 0x80, 0x1B , 0x36}
-};
 
-const block DES :: mix_col_matrix = {
-    {
-        {0x02, 0x03, 0x01, 0x01},
-        {0x01, 0x02, 0x03, 0x01},
-        {0x01, 0x01, 0x02, 0x03},
-        {0x03, 0x01, 0x01, 0x02}
-    }
-}; 
+uint64_t DES :: roundKeys[16] = {0};
 
-const block DES :: inv_mix_col_matrix = {
-    {
-        {0x0e, 0x0b, 0x0d, 0x09},
-        {0x09, 0x0e, 0x0b, 0x0d},
-        {0x0d, 0x09, 0x0e, 0x0b},
-        {0x0b, 0x0d, 0x09, 0x0e}
-    }
-};
-
-byte DES :: xtime(byte a){
-    //if it will overflow then reduce it with the irreducible polynomial (11B)
-    if(a & 0x80){
-        return (a << 1) ^ (0x1B);
-    }
-    return a << 1;
-}
-
-byte DES :: gmul(byte a , byte b){
-    byte ans = 0;
-    while(b){
-        if(b & 1){
-            ans ^= a;
-        }
-        a = xtime(a);
-        b >>= 1;
-    }
-    return ans;
-}
-
-byte DES::get_byte(char ch){
-    byte b = 0;
-    if(ch >= '0' && ch <= '9'){
-        b = ch - '0';
-    }
-    else if(ch >= 'a' && ch <= 'f') b = 10 + (ch - 'a');
-    else if(ch >= 'A' && ch <= 'F') b = 10 + (ch - 'A');
-    return b;
-}
-
-char DES :: get_char(byte b){
-    if(b <= 9 && b >= 0){
-        return ('0' + b);
-    }
-    return ('a' + b - 10);
-}
-
-byte DES :: get_sbox_byte(byte b , bool inverse = 0){
-    unsigned int col = b & (0x0f);
-    unsigned int row = (b >> 4) & (0x0f);
-    if(inverse) return inv_sbox[row][col];
-    return sbox[row][col];
-}
-
-void DES :: generate_round_keys(const std::string & s){
-    keys[0] = string_to_state(s);
-    for(int r = 1 ; r <= 10 ; r++){
-        block new_key;
-        //rotate the word
-        byte tmp[4] = {keys[r-1][1][3] , keys[r-1][2][3] ,keys[r-1][3][3] , keys[r-1][0][3]};
-        //substitute
-        for(int i = 0 ; i < 4 ; i++){
-            tmp[i] = get_sbox_byte(tmp[i]);
-        }
-        tmp[0] ^= rcon[r];
-        for(int i = 0 ; i < 4 ; i++){
-            new_key[i][0] = tmp[i] ^ keys[r-1][i][0];
-        }
-        for(int i = 1 ; i < 4 ; i++){
-            for(int j = 0 ; j < 4 ; j++){
-                new_key[j][i] = new_key[j][i-1] ^ keys[r-1][j][i];
-            }
-        }
-        keys[r] = new_key;
-    }
-}
-
-void DES :: print_block(const block & b){
-    for(int i = 0 ; i < b.size() ; i++){
-        for(int j = 0 ; j < b[0].size() ; j++){
-            if(b[i][j] <= 15){
-                std::cout << 0;
-            }
-            std::cout << std::hex << (int)b[i][j] << " ";
-        }
-        std::cout << '\n';
-    }
-    std :: cout << "\n";
-}
-
-block DES :: sub_bytes(const block & b){
-    block ans;
-    for(int i = 0 ; i < b.size() ; i++){
-        for(int j = 0 ; j < b[0].size() ; j++){
-            ans[i][j] = get_sbox_byte(b[i][j]);
+uint64_t DES :: initial_permutation(uint64_t data){
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 64 ; i++){
+        uint64_t set = (data & (1ULL << (initialPermutation[i]-1)));
+        if(set){
+            ans |= (1ULL << i);
         }
     }
     return ans;
 }
-
-block DES :: shift_rows(const block & b){
-    block ans;
-    for(int i = 0 ; i < b.size() ; i++){
-        std::array<byte , 4> tmp;
-        for(int j = 0 ; j < b[0].size() ; j++){
-            tmp[((j-i)+4)%4] = b[i][j];
-        }
-        ans[i] = tmp;
-    }
-    return ans;
-}
-
-block DES :: mix_columns(const block & b){
-    block ans;
-    for(int i = 0 ; i < b.size() ; i++){
-        for(int j = 0 ; j < b[0].size() ; j++){
-            byte a = 0;
-            for(int k = 0 ; k < b.size() ; k++){
-                a ^= gmul(mix_col_matrix[i][k] , b[k][j]);
-            }
-            ans[i][j] = a;
+uint64_t DES :: final_permutation(uint64_t data){
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 64 ; i++){
+        uint64_t set = (data & (1ULL << (finalPermutation[i]-1)));
+        if(set){
+            ans |= (1ULL << i);
         }
     }
     return ans;
 }
-
-block DES :: add_round_key(const block & b , int round){
-    block ans;
-    for(int i = 0 ; i < 4 ; i++){
-        for(int j = 0 ; j < 4 ; j++){
-            ans[i][j] = b[i][j] ^ keys[round][i][j];
+uint64_t DES :: applyPC1(uint64_t key){
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 56 ; i++){
+        uint64_t set = (key & (1ULL << (64 - PC1[i])));
+        if(set){
+            ans |= (1ULL << (55 - i));
         }
     }
     return ans;
 }
-
-block DES :: string_to_state(const std::string & s){
-    if(s.size() != 32){
-        std :: cerr << "Invalid key/data length must be 16 bytes";
-        exit(1);
-    }
-    block ans;
-    for(int i = 0 ; i < s.size() ; i += 2){
-        byte first = get_byte(s[i]) , second = get_byte(s[i+1]);
-        ans[(i/2)%4][(i/2)/4] = (first << 4) | second;
-    }
-    return ans;
-}
-
-std::string DES :: state_to_string(const block &b){
-    std::string ans = "";
-    for(int j = 0 ; j < b[0].size() ; j++){
-        for(int i = 0 ; i < b.size() ; i++){
-            byte first = (b[i][j] >> 4 ) , second = b[i][j] & (0x0f);
-            ans += get_char(first);
-            ans += get_char(second);
+uint64_t DES :: applyPC2(uint64_t key){
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 48 ; i++){
+        uint64_t set = (key & (1ULL << (56 - PC2[i])));
+        if(set){
+            ans |= (1ULL << (47-i));
         }
     }
     return ans;
 }
-
-block DES :: inv_sub_bytes(block & b){
-    block ans;
-    for(int i = 0 ; i < b.size() ; i++){
-        for(int j = 0 ; j < b[0].size() ; j++){
-            ans[i][j] = get_sbox_byte(b[i][j] , 1);
+uint64_t DES :: leftRotate(uint64_t k){
+    k = (k << 1);
+    if(k & (1ULL << 28)){
+        k |= 1;
+        k ^= (1ULL << 28);
+    }
+    return k;
+}
+void DES :: generateRoundKeys(uint64_t k){
+    uint64_t pc1ans = applyPC1(k);
+    uint64_t C0 = pc1ans >> 28;
+    uint64_t D0 = pc1ans & (0xFFFFFFF);
+    for(int i = 1 ; i <= 16 ; i++){
+        uint64_t C0_ = leftRotate(C0);
+        uint64_t D0_ = leftRotate(D0);
+        if(!(i == 1 || i == 2 || i == 9 || i == 16)){
+            //shift again
+            C0_ = leftRotate(C0_);
+            D0_ = leftRotate(D0_);
+        }
+        uint64_t combined = (C0_ << 28) | D0_;
+        roundKeys[i-1] = applyPC2(combined);
+        C0 = C0_;
+        D0 = D0_;
+    }
+}
+uint64_t DES :: expansionPBox(uint64_t ri){
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 48 ; i++){
+        uint64_t set = ri & (1ULL << (32 - E[i]));
+        if(set){
+            ans |= (1ULL << (47-i));
         }
     }
     return ans;
 }
-
-block DES :: inv_shift_rows(block &b){
-    block ans;
-    for(int i = 0 ; i < 4 ; i++){
-        std::array<byte , 4> tmp;
-        for(int j = 0 ; j < 4 ; j++){
-            tmp[(j+i)%4] = b[i][j];
-        }
-        ans[i] = tmp;
+uint64_t DES :: apply_sbox(uint64_t ri){
+    //ri is 48 bits of input
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 8 ; i++){
+        uint64_t sixbits = (ri >> ((7-i)*6)) & (0x3F);
+        uint64_t r = ((sixbits & (0x20)) >> 4)  | (sixbits & 1ULL);
+        uint64_t c = (sixbits & (0x1E)) >> 1;
+        uint64_t sval = S_BOX[i][r][c];
+        ans = (ans << 4) | sval;
     }
     return ans;
 }
-
-block DES :: inv_mix_columns(block& b){
-    block ans;
-    for(int i = 0 ; i < 4 ; i++){
-        for(int j = 0 ; j < 4 ; j++){
-            byte a = 0;
-            for(int k = 0 ; k < 4 ; k++){
-                a ^= gmul(inv_mix_col_matrix[i][k] , b[k][j]);
-            }
-            ans[i][j] = a;
+uint64_t DES :: apply_straight_Pbox(uint64_t ri){
+    //ri is 32 bits of input
+    uint64_t ans = 0;
+    for(int i = 0 ; i < 32 ; i++){
+        uint64_t set = ri & (1ULL << (32 - StraightPbox[i]));
+        if(set){
+            ans |= (1ULL << (31-i));
         }
     }
     return ans;
 }
-
-std::string DES :: encrypt(const std::string &data , const std::string &key){
-    //generate round keys for all 1 + 10 rounds
-    generate_round_keys(key);
-    block state = string_to_state(data);
-    state = add_round_key(state , 0);
-    for(int round = 1 ; round <= 10 ; round++){
-        state = sub_bytes(state);
-        state = shift_rows(state);
-        if(round != 10) state = mix_columns(state);
-        state = add_round_key(state , round);
-    }
-
-    return state_to_string(state);
+uint64_t DES :: f(uint64_t ri , uint64_t roundKey){
+    //ri is 32 bits
+    uint64_t ans = expansionPBox(ri) ^ roundKey;
+    ans = apply_sbox(ans);
+    ans = apply_straight_Pbox(ans);
+    return ans;
 }
-
-std::string DES :: decrypt(const std::string &encrypted_data){
-    block state = string_to_state(encrypted_data);
-    state = add_round_key(state , 10);
-    for(int round = 1 ; round <= 10 ; round++){
-        state = inv_sub_bytes(state);
-        state = inv_shift_rows(state);
-        if(round != 10) state = inv_mix_columns(state);
-        if(round != 10){
-            keys[10-round] = inv_mix_columns(keys[10-round]);   
-        }
-        state = add_round_key(state , 10-round);
+uint64_t DES :: performRound(uint64_t data , bool e = 1){
+    uint64_t ans = 0;
+    uint64_t R = data & (0xFFFFFFFF);
+    uint64_t L = (data >> 32);
+    for(int i = 0 ; i < 16 ; i++){
+        uint64_t tmp = R;
+        R = L ^ f(R , roundKeys[e ? i : (15-i)]);
+        L = tmp;
     }
-    return state_to_string(state);
+    return (R << 32) | L;
 }
-
+uint64_t DES :: encrypt(uint64_t data , uint64_t key){
+    //data and key both are of 64 bits
+    generateRoundKeys(key);
+    uint64_t ans = initial_permutation(data);
+    ans = performRound(ans);
+    ans = final_permutation(ans);
+    return ans;
+}
+uint64_t DES :: decrypt(uint64_t encrypted_data){
+    uint64_t ans = initial_permutation(encrypted_data);
+    ans = performRound(ans , false);
+    ans = final_permutation(ans);
+    return ans;
+}

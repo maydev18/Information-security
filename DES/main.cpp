@@ -2,10 +2,17 @@
 #include <iostream>
 int main(){
     DES a;
-    std::string k = "2b7e151628aed2a6abf7158809cf4f3c";
-    std::string data = "3243f6a8885a308d313198a2e0370734";
-    std::string encrypted_data =  a.encrypt(data , k);
-    std :: string decrypted_data = a.decrypt(encrypted_data);
-    std :: cout << "Encrypted data : " << encrypted_data << "\nDecrypted Data : " << decrypted_data << '\n';
+    uint64_t input = 0x0123456789ABCDEF;
+    uint64_t key = 0x133457799BBCDFF1;
+    uint64_t encrypted_data = a.encrypt(input , key);
+    uint64_t decrypted_data = a.decrypt(encrypted_data);
+    std :: cout << std :: hex  << encrypted_data << "\n";
+    std :: cout << std :: hex  << decrypted_data << "\n";
+    if(decrypted_data == input){
+        std :: cout << "DES is working fine";
+    }
+    else{
+        std :: cout << "DES failed";
+    }
     return 0;
 }
